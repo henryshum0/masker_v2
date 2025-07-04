@@ -1,0 +1,137 @@
+html,
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #333;
+    height: 100%;
+    width: 100%;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+#custom-cursor {
+    position: fixed;
+    pointer-events: none;
+    border: 2px solid #888;
+    border-radius: 50%;
+    background: transparent;
+    z-index: 9999;
+    mix-blend-mode: difference;
+    transition: width 0.1s, height 0.1s, border-color 0.1s;
+    display: none;
+}
+
+.hidden {
+    opacity: 0% !important;
+}
+
+#container {
+    display: block;
+    position: relative;
+    margin: auto;
+}
+
+#image-canvas{
+    position: absolute;
+    z-index: 1;
+}
+#mask-canvas {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+
+    position: absolute;
+    z-index: 2;
+    top: 0;
+    opacity: 40%;
+}
+
+/*enaling fixed image size/*
+@media screen and (min-width: 66.625vh) {
+    #container {
+        height: 100vh;
+        width: 66.625vh;
+    }
+}
+
+@media screen and (max-width: 66.624vh) {
+    #container {
+        height: 150.09vw;
+        width: 100vw;
+    }
+}*/
+.modal-button {
+    font-size: 1vw;
+    background-color: white;
+    cursor: pointer;
+    border: solid 0.1vw black;
+    width: 10vw;
+    height: 5vh;
+    margin: 0.5vh 0;
+}
+
+#item-list {
+    height:10vh;
+    width: 10vw;
+    overflow-y: auto;
+}
+
+#modal{
+    display: none;
+    position:fixed;
+    top:0; 
+    z-index: 5;
+    left:0; 
+    width:100vw; 
+    height:100vh; 
+    background:rgba(0,0,0,0.3); 
+    align-items:center; 
+    justify-content:center;
+}
+
+#controls {
+    position: fixed;
+    top: 0;
+    left: 0;
+
+    z-index: 100;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: column;
+}
+
+.control-button {
+    position: relative;
+    font-size: 1vw !important;
+    background-color: white;
+    cursor: pointer;
+    border: solid 0.1vw black;
+    width: 5vw;
+    height: 5vw;
+}
+
+/* #next-button {
+    z-index: 100;
+    background-color: white;
+    border: 1px solid black;
+    color: black;
+    position: fixed;
+    right: 0;
+    bottom: 1rem;
+    padding: 1rem;
+    transform-origin: bottom right;
+}
+
+#back-button {
+    z-index: 100;
+    background-color: white;
+    border: 1px solid black;
+    color: black;
+    position: fixed;
+    left: 0;
+    bottom: 1rem;
+    padding: 1rem;
+    transform-origin: bottom left;
+} */
