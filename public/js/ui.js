@@ -1,4 +1,3 @@
-
 export class UI {
 
     constructor(ui_container_ID, canvas, file_system) {
@@ -26,6 +25,7 @@ export class UI {
         this.toggle_mask_btn.addEventListener('click', this.canvas.toggleMask.bind(this.canvas));
         this.hide_btn.addEventListener('click', this.toggleUI.bind(this));
         this.switch_color_btn.addEventListener('click',()=> {this.canvas.switchColor(); this.update_custom_cursor();});
+        this.crop_btn.addEventListener('click', this.startCropMode.bind(this));
         this.inc_pensize_btn.addEventListener('click', () => {
             this.canvas.changeBrushSize(2);
             this.update_custom_cursor();
@@ -100,6 +100,12 @@ export class UI {
         switch_color_btn.id = 'switch-color';
         this.switch_color_btn = switch_color_btn;
 
+        const crop_btn = document.createElement('button');
+        crop_btn.textContent = '✂️ Crop';
+        crop_btn.className = 'control-button';
+        crop_btn.id = 'crop';
+        this.crop_btn = crop_btn;
+
         const clear_btn = document.createElement('button');
         clear_btn.textContent = '🗑️ Clear Mask (f)';
         clear_btn.className = 'control-button';
@@ -130,6 +136,7 @@ export class UI {
         this.container.appendChild(inc_pensize_btn);
         this.container.appendChild(dec_pensize_btn);
         this.container.appendChild(switch_color_btn);
+        this.container.appendChild(crop_btn);
         this.container.appendChild(clear_btn);
         this.container.appendChild(undo_btn);
         this.container.appendChild(redo_btn);
@@ -214,7 +221,7 @@ export class UI {
         let img_list = await this.file_system.get_img_list()
         img_list.forEach((img_name) => {
             const btn = document.createElement('button');
-            btn.checlassName = 'modal-button';
+            btn.className = 'modal-button';
             btn.textContent = img_name
             btn.onclick = async () => {
                 let img_ok = await this.file_system.get_img(img_name);
@@ -242,21 +249,82 @@ export class UI {
     }
 
     async uplaodImage(e) {
+        // Store original button text
+        const originalText = this.upload_img_btn.textContent;
+        
         document.getElementById('file-input').click();
         document.getElementById('file-input').onchange = async (event) => {
             const files = event.target.files;
             if (files.length > 0) {
+                let successCount = 0;
+                let failCount = 0;
+                
                 for (let file of files) {
                     if (file.type.startsWith('image/')) {
                         const reader = new FileReader();
                         reader.onload = async (e) => {
-                            let img_base64 = e.target.result;
-                            let img_ok = await this.file_system.upload_image(img_base64, file.name);
-                            console.log(img_ok);
+                            try {
+                                let img_base64 = e.target.result;
+                                let img_ok = await this.file_system.upload_image(img_base64, file.name);
+                                console.log(img_ok);
+                                
+                                if (img_ok) {
+                                    successCount++;
+                                } else {
+                                    failCount++;
+                                }
+                                
+                                // Update button with progress
+                                if (files.length > 1) {
+                                    this.upload_img_btn.textContent = `Uploaded ${successCount}/${files.length}`;
+                                } else {
+                                    this.upload_img_btn.textContent = '✅ Uploaded!';
+                                }
+                                this.upload_img_btn.style.backgroundColor = '#4caf50'; // Green
+                                
+                                // When all files are processed
+                                if (successCount + failCount === files.length) {
+                                    if (failCount > 0) {
+                                        this.upload_img_btn.textContent = `⚠️ ${successCount}/${files.length} Uploaded`;
+                                        this.upload_img_btn.style.backgroundColor = '#ff9800'; // Orange
+                                    }
+                                    
+                                    // Reset button after delay
+                                    setTimeout(() => {
+                                        this.upload_img_btn.textContent = originalText;
+                                        this.upload_img_btn.style.backgroundColor = '';
+                                    }, 1500);
+                                }
+                            } catch (error) {
+                                console.error("Error uploading image:", error);
+                                failCount++;
+                                
+                                this.upload_img_btn.textContent = '❌ Failed!';
+                                this.upload_img_btn.style.backgroundColor = '#f44336'; // Red
+                                
+                                // Reset button after delay
+                                setTimeout(() => {
+                                    this.upload_img_btn.textContent = originalText;
+                                    this.upload_img_btn.style.backgroundColor = '';
+                                }, 1500);
+                            }
                         };
+                        
                         reader.onerror = (error) => {
                             console.error("Error reading file:", error);
+                            failCount++;
+                            
+                            // Update button to show error
+                            this.upload_img_btn.textContent = '❌ Failed!';
+                            this.upload_img_btn.style.backgroundColor = '#f44336'; // Red
+                            
+                            // Reset button after delay
+                            setTimeout(() => {
+                                this.upload_img_btn.textContent = originalText;
+                                this.upload_img_btn.style.backgroundColor = '';
+                            }, 1500);
                         };
+                        
                         reader.readAsDataURL(file);
                     }
                 }
@@ -265,21 +333,82 @@ export class UI {
     }
 
     async uplaodLabel(e) {
+        // Store original button text
+        const originalText = this.upload_mask_btn.textContent;
+        
         document.getElementById('file-input').click();
         document.getElementById('file-input').onchange = async (event) => {
             const files = event.target.files;
             if (files.length > 0) {
+                let successCount = 0;
+                let failCount = 0;
+                
                 for (let file of files) {
                     if (file.type.startsWith('image/')) {
                         const reader = new FileReader();
                         reader.onload = async (e) => {
-                            let label_base64 = e.target.result;
-                            let label_ok = await this.file_system.upload_label(label_base64, file.name);
-                            console.log(label_ok);
+                            try {
+                                let label_base64 = e.target.result;
+                                let label_ok = await this.file_system.upload_label(label_base64, file.name);
+                                console.log(label_ok);
+                                
+                                if (label_ok) {
+                                    successCount++;
+                                } else {
+                                    failCount++;
+                                }
+                                
+                                // Update button with progress
+                                if (files.length > 1) {
+                                    this.upload_mask_btn.textContent = `Uploaded ${successCount}/${files.length}`;
+                                } else {
+                                    this.upload_mask_btn.textContent = '✅ Uploaded!';
+                                }
+                                this.upload_mask_btn.style.backgroundColor = '#4caf50'; // Green
+                                
+                                // When all files are processed
+                                if (successCount + failCount === files.length) {
+                                    if (failCount > 0) {
+                                        this.upload_mask_btn.textContent = `⚠️ ${successCount}/${files.length} Uploaded`;
+                                        this.upload_mask_btn.style.backgroundColor = '#ff9800'; // Orange
+                                    }
+                                    
+                                    // Reset button after delay
+                                    setTimeout(() => {
+                                        this.upload_mask_btn.textContent = originalText;
+                                        this.upload_mask_btn.style.backgroundColor = '';
+                                    }, 1500);
+                                }
+                            } catch (error) {
+                                console.error("Error uploading mask:", error);
+                                failCount++;
+                                
+                                this.upload_mask_btn.textContent = '❌ Failed!';
+                                this.upload_mask_btn.style.backgroundColor = '#f44336'; // Red
+                                
+                                // Reset button after delay
+                                setTimeout(() => {
+                                    this.upload_mask_btn.textContent = originalText;
+                                    this.upload_mask_btn.style.backgroundColor = '';
+                                }, 1500);
+                            }
                         };
+                        
                         reader.onerror = (error) => {
                             console.error("Error reading file:", error);
+                            failCount++;
+                            
+                            // Update button to show error
+                            this.upload_mask_btn.textContent = '❌ Failed!';
+                            this.upload_mask_btn.style.backgroundColor = '#f44336'; // Red
+                            
+                            // Reset button after delay
+                            setTimeout(() => {
+                                this.upload_mask_btn.textContent = originalText;
+                                this.upload_mask_btn.style.backgroundColor = '';
+                            }, 1500);
                         };
+                        
                         reader.readAsDataURL(file);
                     }
                 }
@@ -288,9 +417,90 @@ export class UI {
     }
 
     async saveLabel() {
-        const mask_base64 = this.canvas.getMaskBase64();
-        this.file_system.opened_label.src = mask_base64;
-        let label_ok = await this.file_system.save_label();
-        console.log(label_ok);
+        // Store original button text
+        const originalText = this.save_btn.textContent;
+        
+        try {
+            const mask_base64 = this.canvas.getMaskBase64();
+            this.file_system.opened_label.src = mask_base64;
+            let label_ok = await this.file_system.save_label();
+            console.log("save label:", label_ok);
+            
+            // Show success message
+            this.save_btn.textContent = '✅ Saved!';
+            this.save_btn.style.backgroundColor = '#4caf50'; // Green
+        } catch (error) {
+            // Show failure message
+            console.error("Error saving label:", error);
+            this.save_btn.textContent = '❌ Failed!';
+            this.save_btn.style.backgroundColor = '#f44336'; // Red
+        }
+        
+        // Reset button text and style after a short delay
+        setTimeout(() => {
+            this.save_btn.textContent = originalText;
+            this.save_btn.style.backgroundColor = ''; // Reset to default
+        }, 1500); // 1.5 seconds
+    }
+
+    startCropMode() {
+        // Update button to show we're in crop mode
+        const originalText = this.crop_btn.textContent;
+        this.crop_btn.textContent = '✂️ Selecting...';
+        this.crop_btn.style.backgroundColor = '#2196F3'; // Blue
+        
+        // Start the crop selection mode in the canvas
+        this.canvas.startCropMode(async (x1, y1, x2, y2) => {
+            // This is the callback function that will be called when the user
+            // has selected two points for cropping
+            console.log(`Crop selection completed: (${x1}, ${y1}) to (${x2}, ${y2})`);
+            
+            // Get the cropped image as base64
+            const croppedImageBase64 = this.canvas.cropImageToBase64(x1, y1, x2, y2);
+            
+            // Update button to show we're now predicting
+            this.crop_btn.textContent = '🔄 Predicting...';
+            this.crop_btn.style.backgroundColor = '#FF9800'; // Orange
+            
+            try {
+                // Send the cropped image for prediction
+                const predictionResult = await this.file_system.predictCropImage(croppedImageBase64);
+                
+                if (predictionResult.success) {
+                    // If prediction was successful, replace the mask region with the predicted mask
+                    console.log("Prediction successful, updating mask");
+                    this.canvas.replaceMaskRegion(x1, y1, x2, y2, predictionResult.maskBase64);
+                    
+                    // Show success on button
+                    this.crop_btn.textContent = '✅ Predicted!';
+                    this.crop_btn.style.backgroundColor = '#4CAF50'; // Green
+                } else {
+                    // If prediction failed, just use the original cropped image
+                    console.warn("Prediction failed:", predictionResult.error);
+                    this.canvas.replaceMaskRegion(x1, y1, x2, y2, croppedImageBase64);
+                    
+                    // Show failure on button
+                    this.crop_btn.textContent = '❌ Prediction Failed';
+                    this.crop_btn.style.backgroundColor = '#F44336'; // Red
+                    
+                    // Display error in console
+                    console.error("Prediction failed:", predictionResult.error);
+                }
+            } catch (error) {
+                // If there was an error during prediction, fallback to using the original image
+                console.error("Error during prediction:", error);
+                this.canvas.replaceMaskRegion(x1, y1, x2, y2, croppedImageBase64);
+                
+                // Show error on button
+                this.crop_btn.textContent = '❌ Error';
+                this.crop_btn.style.backgroundColor = '#F44336'; // Red
+            }
+            
+            // Reset button appearance after a delay
+            setTimeout(() => {
+                this.crop_btn.textContent = originalText;
+                this.crop_btn.style.backgroundColor = '';
+            }, 2000);
+        });
     }
 }

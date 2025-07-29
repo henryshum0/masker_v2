@@ -1,0 +1,5 @@
+model_type: "hnet"
+
+#prediction settings
+window_size: 448
+overlap: 0.2

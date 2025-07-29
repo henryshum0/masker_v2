@@ -45,7 +45,7 @@ body {
     position: absolute;
     z-index: 2;
     top: 0;
-    opacity: 40%;
+    opacity: 50%;
 }
 
 /*enaling fixed image size/*
@@ -62,21 +62,7 @@ body {
         width: 100vw;
     }
 }*/
-.modal-button {
-    font-size: 1vw;
-    background-color: white;
-    cursor: pointer;
-    border: solid 0.1vw black;
-    width: 10vw;
-    height: 5vh;
-    margin: 0.5vh 0;
-}
 
-#item-list {
-    height:10vh;
-    width: 10vw;
-    overflow-y: auto;
-}
 
 #modal{
     display: none;
@@ -90,6 +76,65 @@ body {
     align-items:center; 
     justify-content:center;
 }
+
+#modal + div {
+    width: 100%;
+    height: 100%;
+}
+
+#modal > div {
+    width: 500px;
+    height: 600px;
+    display: flex;
+    flex-direction: column;
+    background:#fff; 
+    padding: 20px; 
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    transform-origin: center;
+    /* This prevents the modal from being affected by browser zoom */
+    transform: scale(1);
+}
+
+#item-list {
+    height: 400px;
+    overflow-y: auto;
+    margin: 10px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.modal-button {
+    font-size: 16px;
+    background-color: #f5f5f5;
+    cursor: pointer;
+    border: solid 1px #ccc;
+    padding: 8px;
+    border-radius: 4px;
+    text-align: left;
+    transition: background-color 0.2s;
+}
+
+.modal-button:hover {
+    background-color: #e0e0e0;
+}
+
+/* .modal-button {
+    font-size: 1vw;
+    background-color: white;
+    cursor: pointer;
+    border: solid 0.1vw black;
+    width: 5vw;
+    height: 5vh;
+    margin: 0.5vh 0;
+}
+
+#item-list {
+    height:10vh;
+    width: 10vw;
+    overflow-y: auto;
+} */
 
 #controls {
     position: fixed;

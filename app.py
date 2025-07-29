@@ -6,7 +6,9 @@ import argparse
 from typing import Union
 
 from flask import Flask, render_template, jsonify, request, redirect, url_for
+from predictor import Predictor
 
+predictor = Predictor(model_path='IW_crack/hnet.pth', model_settings_path='model_settings.yaml')
 
 parser = argparse.ArgumentParser()
 # Config
@@ -231,6 +233,105 @@ def save(path:str, data:str, postfix:str='.png') -> bool:
             return True
     except Exception as e:
         raise Exception(f"Failed to save file: {e}")
+
+
+@app.route('/predict', methods=['POST', 'GET'])
+def predict():
+    """Endpoint for crack prediction using the model.
+    
+    This endpoint receives a base64 encoded image either via POST (JSON body) or GET (query parameter),
+    runs it through the predictor model, and returns a base64 encoded mask of the prediction.
+    
+    Returns:
+        JSON response with the predicted mask encoded in base64
+    """
+    try:
+        # Get image data from request
+        if request.method == 'POST':
+            if request.is_json:
+                # Get from JSON body
+                image_data = request.json.get('image')
+            else:
+                # Get from form data if not JSON
+                image_data = request.form.get('image')
+        else:  # GET
+            # Get from query parameter
+            image_data = request.args.get('image')
+            
+        if not image_data:
+            return jsonify({
+                "status": "error", 
+                "message": "No image data provided. Use POST with JSON body {'image': 'base64_data'} or GET with '?image=base64_data'"
+            }), 400
+        
+        # Process the base64 image data
+        try:
+            # Remove data URL prefix if present (already handled by FileSystem.js, but just in case)
+            if image_data.startswith('data:image'):
+                image_data = image_data.split(',', 1)[1]
+                
+            # Convert base64 to bytes
+            image_bytes = base64.b64decode(image_data)
+            
+            # Convert to numpy array for OpenCV
+            import numpy as np
+            nparr = np.frombuffer(image_bytes, np.uint8)
+            
+            # Decode image
+            import cv2
+            image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            if image is None:
+                return jsonify({
+                    "status": "error", 
+                    "message": "Failed to decode image. Make sure it's a valid image."
+                }), 400
+            
+            # Run the prediction
+            prediction_result = predictor(image)
+            
+            # Process the prediction output to get a binary mask
+            # The prediction output format may vary depending on your model
+            # Adjust this part based on your specific model output format
+            if prediction_result.ndim > 2:
+                prediction_result = prediction_result.squeeze()
+            
+            # Convert to binary mask (assuming prediction is probability map)
+            threshold = 0.5
+            binary_mask = (prediction_result > threshold).astype(np.uint8) * 255
+            
+            # Encode the binary mask to PNG
+            success, encoded_img = cv2.imencode('.png', binary_mask)
+            if not success:
+                return jsonify({
+                    "status": "error", 
+                    "message": "Failed to encode prediction result"
+                }), 500
+            
+            # Convert to base64 string
+            mask_base64 = base64.b64encode(encoded_img).decode('utf-8')
+            
+            # Return the prediction result
+            return jsonify({
+                "status": "success",
+                "message": "Prediction completed successfully",
+                "mask_base64": f"data:image/png;base64,{mask_base64}"
+            })
+            
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return jsonify({
+                "status": "error", 
+                "message": f"Error processing image: {str(e)}"
+            }), 500
+            
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "status": "error", 
+            "message": f"Server error: {str(e)}"
+        }), 500
 
 
 if __name__ == "__main__":

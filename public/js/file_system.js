@@ -1,4 +1,3 @@
-
 export class FileSystem {
     constructor(dataset_name) {
         this.dataset_name = dataset_name;
@@ -46,6 +45,7 @@ export class FileSystem {
     }
 
     async get_corr_label(img_file_or_id){
+        "find out the correct file name for the label"
         let img_id = img_file_or_id.split('.')[0];
         let available_labels = await this.get_label_list();
         for (let label of available_labels) {
@@ -127,5 +127,58 @@ export class FileSystem {
                 console.error("Error fetching label:", error);
                 return false;
             });
+    }
+    
+    async predictCropImage(cropImageBase64) {
+        // Remove data URL prefix if it exists
+        const base64Data = cropImageBase64.includes('base64,') 
+            ? cropImageBase64.split('base64,')[1]
+            : cropImageBase64;
+            
+        try {
+            // Display loading or progress indicator
+            console.log("Sending image for prediction...");
+            
+            // Send the request using POST instead of GET to handle large images
+            const response = await fetch('/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ image: base64Data })
+            });
+            
+            if (!response.ok) {
+                console.error(`Prediction request failed with status: ${response.status}`);
+                return {
+                    success: false,
+                    error: `Server returned error ${response.status}`
+                };
+            }
+            
+            // Parse the JSON response
+            const result = await response.json();
+            
+            if (result.status === "success") {
+                console.log("Prediction successful");
+                return {
+                    success: true,
+                    maskBase64: result.mask_base64,
+                    message: result.message
+                };
+            } else {
+                console.error("Prediction failed:", result.message);
+                return {
+                    success: false,
+                    error: result.message
+                };
+            }
+        } catch (error) {
+            console.error("Error during prediction request:", error);
+            return {
+                success: false,
+                error: error.message || "Unknown error occurred during prediction"
+            };
+        }
     }
 }

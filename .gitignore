@@ -1,2 +1,7 @@
-/137.jpg
-/137_GT.png
+*.jpg
+*.png
+*.jpeg
+*.JPG
+*.PNG
+*.JPEG
+__pycache__

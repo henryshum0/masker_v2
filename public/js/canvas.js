@@ -12,6 +12,12 @@ export class Canvas{
 
         this.last_pos = false;
         this.dragging = false;
+        this.crop = false;
+        
+        // Crop mode variables
+        this.cropPoints = [];
+        this.cropMarkers = [];
+        this.cropCallbackFn = null;
 
         this.past = [];
         this.future = [];
@@ -105,6 +111,12 @@ export class Canvas{
 
     paintMouseDown(e) {
         if (e.button === 0){
+            if (this.crop) {
+                // If in crop mode, record points instead of drawing
+                this.handleCropPoint(e);
+                return;
+            }
+            
             this.storeState();
             this.drawing = true;
             let [x, y] = this.getMouseXY(e);
@@ -114,6 +126,9 @@ export class Canvas{
     }
 
     paintMouseUp(e) {
+        if (this.crop){
+            return;
+        }
         if (e.button === 0){
             this.drawing = false;
             this.last_pos = false;
@@ -394,5 +409,166 @@ export class Canvas{
 
     getMaskBase64() {
         return this.canvas.toDataURL("image/png");
+    }
+    
+    cropImageToBase64(x1, y1, x2, y2) {
+        // Ensure coordinates are in the right order
+        const [startX, startY] = [Math.min(x1, x2), Math.min(y1, y2)];
+        const [endX, endY] = [Math.max(x1, x2), Math.max(y1, y2)];
+        
+        // Calculate width and height of the crop
+        const cropWidth = endX - startX;
+        const cropHeight = endY - startY;
+        
+        // Create a temporary canvas for the crop
+        const cropCanvas = document.createElement('canvas');
+        cropCanvas.width = cropWidth;
+        cropCanvas.height = cropHeight;
+        const cropCtx = cropCanvas.getContext('2d');
+        
+        // First, crop from the image canvas
+        if (this.img_ctx) {
+            const imageData = this.img_ctx.getImageData(startX, startY, cropWidth, cropHeight);
+            cropCtx.putImageData(imageData, 0, 0);
+        }
+        
+        // Convert to base64 and return
+        return cropCanvas.toDataURL("image/png");
+    }
+    
+    replaceMaskRegion(x1, y1, x2, y2, crop) {
+        // Store current state for undo
+        this.storeState();
+        
+        // Ensure coordinates are in the right order
+        const [startX, startY] = [Math.min(x1, x2), Math.min(y1, y2)];
+        const [endX, endY] = [Math.max(x1, x2), Math.max(y1, y2)];
+        
+        // Calculate width and height of the region
+        const regionWidth = endX - startX;
+        const regionHeight = endY - startY;
+        
+        // If crop is a string (base64), convert it to an image
+        if (typeof crop === 'string') {
+            const img = new Image();
+            img.onload = () => {
+                this.replaceMaskRegionWithImage(startX, startY, regionWidth, regionHeight, img);
+            };
+            img.src = crop;
+            return; // Return early as we'll handle it in the onload callback
+        }
+        
+        // If crop is already an Image object
+        this.replaceMaskRegionWithImage(startX, startY, regionWidth, regionHeight, crop);
+    }
+    
+    replaceMaskRegionWithImage(x, y, width, height, image) {
+        // Clip to ensure we don't try to replace outside the canvas
+        const clipX = Math.max(0, x);
+        const clipY = Math.max(0, y);
+        const clipWidth = Math.min(width, this.canvas_width - clipX);
+        const clipHeight = Math.min(height, this.canvas_height - clipY);
+        
+        if (clipWidth <= 0 || clipHeight <= 0) return;
+        
+        // Create a temporary canvas to process the image
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = clipWidth;
+        tempCanvas.height = clipHeight;
+        const tempCtx = tempCanvas.getContext('2d');
+        
+        // Draw the crop image onto the temporary canvas, scaling if necessary
+        tempCtx.drawImage(image, 0, 0, image.width, image.height, 0, 0, clipWidth, clipHeight);
+        
+        // Get the pixel data
+        const imageData = tempCtx.getImageData(0, 0, clipWidth, clipHeight);
+        
+        // Apply to the mask canvas
+        this.ctx.putImageData(imageData, clipX, clipY);
+        
+        // If we have auto-thresholding, apply it
+        this.removeGray();
+    }
+    
+    // Crop selection functionality
+    startCropMode(callback) {
+        // Start crop selection mode
+        this.crop = true;
+        this.cropPoints = [];
+        this.clearCropMarkers();
+        this.cropCallbackFn = callback;
+        
+        // Change cursor to indicate crop mode
+        document.body.style.cursor = 'crosshair';
+        
+        console.log("Crop mode started. Select two points to define the crop area.");
+    }
+    
+    handleCropPoint(e) {
+        const [x, y] = this.getMouseXY(e);
+        
+        // Add the point to our collection
+        this.cropPoints.push({x, y});
+        
+        // Draw a green marker at this position
+        const markerId = this.drawCropMarker(x, y);
+        this.cropMarkers.push(markerId);
+        
+        console.log(`Crop point ${this.cropPoints.length} selected at (${x}, ${y})`);
+        
+        // If we have two points, finish the crop operation
+        if (this.cropPoints.length >= 2) {
+            setTimeout(() => this.finishCropSelection(), 200); // Short delay so user can see the second point
+        }
+    }
+    
+    drawCropMarker(x, y) {
+        // Save current drawing state
+        const currentState = this.ctx.getImageData(0, 0, this.canvas_width, this.canvas_height);
+        
+        // Draw a green marker (small circle)
+        const originalColor = this.color;
+        this.color = 'rgb(0, 255, 0)'; // Bright green
+        const originalWidth = this.brush_width;
+        this.brush_width = 8; // Make it clearly visible
+        
+        this.drawCircle(x, y, this.brush_width);
+        
+        // Restore original settings
+        this.color = originalColor;
+        this.brush_width = originalWidth;
+        
+        return currentState;
+    }
+    
+    clearCropMarkers() {
+        // Remove any existing crop markers
+        if (this.cropMarkers.length > 0 && this.cropMarkers[0]) {
+            this.ctx.putImageData(this.cropMarkers[0], 0, 0);
+            this.cropMarkers = [];
+        }
+    }
+    
+    finishCropSelection() {
+        // Exit crop mode
+        this.crop = false;
+        
+        // Get the two points
+        const point1 = this.cropPoints[0];
+        const point2 = this.cropPoints[1];
+        
+        // Clear the green markers
+        this.clearCropMarkers();
+        
+        // Call the callback with the points
+        if (this.cropCallbackFn) {
+            this.cropCallbackFn(point1.x, point1.y, point2.x, point2.y);
+        }
+        
+        // Reset for next time
+        this.cropPoints = [];
+        this.cropCallbackFn = null;
+        
+        console.log("Crop selection completed.");
     }
 }
