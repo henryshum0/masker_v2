@@ -6,3 +6,4 @@ let dataset_name = document.getElementById("dataset").textContent;
 let canvas = new Canvas("mask-canvas", "image-canvas");
 let file_system = new FileSystem(dataset_name);
 let ui = new UI("controls", canvas, file_system);
+document.body.style.cursor = 'crosshair';
