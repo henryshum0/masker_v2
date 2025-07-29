@@ -5,3 +5,4 @@
 *.PNG
 *.JPEG
 __pycache__
+*.pth

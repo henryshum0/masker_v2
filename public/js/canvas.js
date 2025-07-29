@@ -52,7 +52,7 @@ export class Canvas{
         this.canvas.addEventListener('mouseleave', (e) =>{
             this.mouseLeave(e);
         })  
-        this.canvas.addEventListener('mouseover', ()=>{document.body.style.cursor = 'none';});
+        this.canvas.addEventListener('mouseover', ()=>{document.body.style.cursor = 'crosshair';});
         this.canvas.addEventListener('contextmenu', (e) => {
             e.preventDefault(); // Prevent the context menu from appearing
             this.storeState();

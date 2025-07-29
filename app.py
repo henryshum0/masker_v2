@@ -8,7 +8,7 @@ from typing import Union
 from flask import Flask, render_template, jsonify, request, redirect, url_for
 from predictor import Predictor
 
-predictor = Predictor(model_path='IW_crack/hnet.pth', model_settings_path='model_settings.yaml')
+predictor = Predictor(model_settings_path='model_settings.yaml')
 
 parser = argparse.ArgumentParser()
 # Config
