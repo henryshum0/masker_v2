@@ -101,7 +101,7 @@ export class UI {
         this.switch_color_btn = switch_color_btn;
 
         const crop_btn = document.createElement('button');
-        crop_btn.textContent = '✂️ Crop';
+        crop_btn.textContent = '✂️ Predict';
         crop_btn.className = 'control-button';
         crop_btn.id = 'crop';
         this.crop_btn = crop_btn;

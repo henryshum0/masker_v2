@@ -159,11 +159,11 @@ class SlidingWindowCrop:
                     if h_end - h_start < self.window_size or w_end - w_start < self.window_size:
                         # Pad the window to ensure it's exactly window_size x window_size
                         window = image[:, h_start:h_end, w_start:w_end]
-                        pad_h = self.window_size - (h_end - h_start)
-                        pad_w = self.window_size - (w_end - w_start)
-                        
+                        pad_h = max(0, self.window_size - (h_end - h_start))
+                        pad_w = max(0, self.window_size - (w_end - w_start))
+
                         # Use reflection padding instead of zero padding
-                        window = F.pad(window, (0, pad_w, 0, pad_h), mode='reflect')
+                        # window = F.pad(window, (0, pad_w, 0, pad_h), mode='reflect')
                     else:
                         window = image[:, h_start:h_end, w_start:w_end]
                     

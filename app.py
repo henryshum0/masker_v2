@@ -287,7 +287,13 @@ def predict():
                 }), 400
             
             # Run the prediction
-            prediction_result = predictor(image)
+            try:
+                prediction_result = predictor(image)
+            except Exception as e:
+                return jsonify({
+                    "status": "error", 
+                    "message": f"Error during prediction: {str(e)}"
+                }), 500
             
             # Process the prediction output to get a binary mask
             # The prediction output format may vary depending on your model
