@@ -97,24 +97,25 @@ def get_base64_encoded_image(image_path: str) -> str:
 
 # Flask App
 app = Flask(__name__,
-            static_url_path='',
-            static_folder='public',
-            )
+            static_url_path='/static',
+            static_folder='public')
 
 
 @app.route("/")
 def index():
-    return redirect("/datasets")
+    return datasets()
     
 @app.route("/datasets")
 def datasets() -> str:
     datasets_path = args.root_data_path
+    print(f"Looking for datasets in: {datasets_path}")
     try:
         datasets = [d for d in listdir(datasets_path) if not isfile(join(datasets_path, d))]
+        print(f"Found datasets: {datasets}")
         return render_template('select_dataset.html', datasets=datasets)
     except Exception as e:
+        print(f"Error accessing datasets: {e}")
         return f"Error: {e}", 500
-
 
 @app.route("/masking", methods=["GET"])
 def img_mask() -> str:
@@ -130,13 +131,13 @@ def get_file(dataset: str, img_or_label: str, filename: str) -> str:
     return get_base64_encoded_image(path)
     
 @app.route('/datasets/<dataset>/images', methods=['GET'])
-def get_images(dataset: str) -> str:
+def get_image_list_in_dataset(dataset: str) -> str:
     path = join('datasets', dataset, 'images')
     images = get_files(path)
     return jsonify(images)
 
 @app.route('/datasets/<dataset>/labels', methods=['GET'])
-def get_labels(dataset: str) -> str:
+def get_label_list_in_dataset(dataset: str) -> str:
     path = join('datasets', dataset, 'labels')
     labels = get_files(path)
     return jsonify(labels)

@@ -6,12 +6,9 @@
         <a style="display: none;" id="dataset">{{dataset}}</a>
         <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
         <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/modal_fix.js') }}"></script>
         <!-- <script type=module src="main.js"></script> -->
     </head>
-    <div id="custom-cursor"></div>
     <body>
-        <div id="custom-cursor"></div>
         <div id="controls"></div>
         <input type="file" id="file-input" style="display:none;" accept="image/*" multiple/>
         <div id="modal">
@@ -22,8 +19,9 @@
             </div>
         </div>
         <div id="container">
-            <canvas id="mask-canvas" style="z-index: 1;" ></canvas>
+            <canvas id="mask-canvas" style="z-index: 2;" ></canvas>
             <canvas id="image-canvas" style="z-index: 0;"> </canvas>
+            <canvas id="magic_pen_canvas" style="z-index: 1;"></canvas>
         </div>
     </body>
 </html>

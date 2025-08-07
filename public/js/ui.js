@@ -6,7 +6,6 @@ export class UI {
         this.container = document.getElementById(ui_container_ID);
         this.cursor = document.getElementById('custom-cursor');
         document.body.style.cursor = 'none';
-        this.update_custom_cursor();
         this.init();
         this.add_event_listeners();
     }
@@ -24,17 +23,10 @@ export class UI {
         this.clear_btn.addEventListener('click', this.canvas.resetMask.bind(this.canvas));
         this.toggle_mask_btn.addEventListener('click', this.canvas.toggleMask.bind(this.canvas));
         this.hide_btn.addEventListener('click', this.toggleUI.bind(this));
-        this.switch_color_btn.addEventListener('click',()=> {this.canvas.switchColor(); this.update_custom_cursor();});
-        this.crop_btn.addEventListener('click', this.startCropMode.bind(this));
-        this.inc_pensize_btn.addEventListener('click', () => {
-            this.canvas.changeBrushSize(2);
-            this.update_custom_cursor();
-        });
-        this.dec_pensize_btn.addEventListener('click', () => {
-            this.canvas.changeBrushSize(-2);
-            this.update_custom_cursor();
-        });
-        this.canvas.add_event_listener('mousemove', this.move_custom_cursor.bind(this));
+        this.switch_color_btn.addEventListener('click', this.canvas.switchColor.bind(this.canvas));
+        this.switch_mode_btn.addEventListener('click', this.canvas.switchBrushMode.bind(this.canvas));
+        this.inc_pensize_btn.addEventListener('click', () => this.canvas.changeBrushSize(8));
+        this.dec_pensize_btn.addEventListener('click', () => this.canvas.changeBrushSize(-2));
         window.addEventListener('keydown', this.keyboard_shortcuts.bind(this));
     }
 
@@ -100,11 +92,11 @@ export class UI {
         switch_color_btn.id = 'switch-color';
         this.switch_color_btn = switch_color_btn;
 
-        const crop_btn = document.createElement('button');
-        crop_btn.textContent = '✂️ Predict';
-        crop_btn.className = 'control-button';
-        crop_btn.id = 'crop';
-        this.crop_btn = crop_btn;
+        const switch_mode_btn = document.createElement('button');
+        switch_mode_btn.textContent = `Switch Brush Mode (b)`
+        switch_mode_btn.className = 'control-button'
+        switch_mode_btn.id = 'switch-mode';
+        this.switch_mode_btn = switch_mode_btn;
 
         const clear_btn = document.createElement('button');
         clear_btn.textContent = '🗑️ Clear Mask (f)';
@@ -136,7 +128,7 @@ export class UI {
         this.container.appendChild(inc_pensize_btn);
         this.container.appendChild(dec_pensize_btn);
         this.container.appendChild(switch_color_btn);
-        this.container.appendChild(crop_btn);
+        this.container.appendChild(switch_mode_btn);
         this.container.appendChild(clear_btn);
         this.container.appendChild(undo_btn);
         this.container.appendChild(redo_btn);
@@ -144,64 +136,46 @@ export class UI {
 
     keyboard_shortcuts(e) {
     
-    if (e.ctrlKey && e.key === 'z') {
-        this.canvas.undo();
-    }
+        if (e.ctrlKey && e.key === 'z') {
+            this.canvas.undo();
+        }
 
-    if (e.ctrlKey && e.key === 'y') {
-        this.canvas.redo();
-    }
-    
-    if (e.key === '1') {
-        this.canvas.changeBrushSize(-8);
-        this.update_custom_cursor();
-    } else if (e.key === '3') {
-        this.canvas.changeBrushSize(8);
-        this.update_custom_cursor();
-    }
+        if (e.ctrlKey && e.key === 'y') {
+            this.canvas.redo();
+        }
+        
+        if (e.key === '1') {
+            this.canvas.changeBrushSize(-8);
+        } else if (e.key === '3') {
+            this.canvas.changeBrushSize(8);
+        }
 
-    else if (e.key === 'c') {
-        this.canvas.switchColor();
-        this.update_custom_cursor();
-    }
-    
-    else if (e.key === 'm') {
-        this.canvas.toggleMask();
-    }
-    
-    else if (e.key === 'h') {
-        this.toggleUI();
-    }
+        else if (e.key === 'c') {
+            this.canvas.switchColor();
+        }
 
-    else if (e.key === 'e') {
-        this.canvas.changeBrushSize(2);
-        this.update_custom_cursor();
-    }
-    else if (e.key === 'q') {
-        this.canvas.changeBrushSize(-2);
-        this.update_custom_cursor();
-    }
-    else if (e.key === 'f') {
-        this.canvas.resetMask();
-    }
+        else if (e.key === 'b') {
+            this.canvas.switchBrushMode();
+        }
+        
+        else if (e.key === 'm') {
+            this.canvas.toggleMask();
+        }
+        
+        else if (e.key === 'h') {
+            this.toggleUI();
+        }
+
+        else if (e.key === 'e') {
+            this.canvas.changeBrushSize(2);
+        }
+        else if (e.key === 'q') {
+            this.canvas.changeBrushSize(-2);
+        }
+        else if (e.key === 'f') {
+            this.canvas.resetMask();
+        }
     }   
-
-    update_custom_cursor() {
-        this.cursor.style.display = "block";
-        this.cursor.style.width = 2 * this.canvas.brush_width + "px";
-        this.cursor.style.height = 2 * this.canvas.brush_width + "px";
-        this.cursor.style.borderColor = this.canvas.color === "rgb(255, 255, 255)" ? "rgb(255, 255, 255)" : "rgb(255, 0, 0)";
-    }
-
-    hide_custom_cursor() {
-        this.cursor.style.display = "none";
-    }
-
-    move_custom_cursor(e) {
-        this.cursor.style.left = (e.clientX - this.canvas.brush_width -2) + "px";
-        this.cursor.style.top = (e.clientY - this.canvas.brush_width -2) + "px";
-        this.cursor.style.display = "block";    
-    }
 
     toggleUI() {
         if(this.container.style.display === "none") {
@@ -443,64 +417,6 @@ export class UI {
         }, 1500); // 1.5 seconds
     }
 
-    startCropMode() {
-        // Update button to show we're in crop mode
-        const originalText = this.crop_btn.textContent;
-        this.crop_btn.textContent = '✂️ Selecting...';
-        this.crop_btn.style.backgroundColor = '#2196F3'; // Blue
-        
-        // Start the crop selection mode in the canvas
-        this.canvas.startCropMode(async (x1, y1, x2, y2) => {
-            // This is the callback function that will be called when the user
-            // has selected two points for cropping
-            console.log(`Crop selection completed: (${x1}, ${y1}) to (${x2}, ${y2})`);
-            
-            // Get the cropped image as base64
-            const croppedImageBase64 = this.canvas.cropImageToBase64(x1, y1, x2, y2);
-            
-            // Update button to show we're now predicting
-            this.crop_btn.textContent = '🔄 Predicting...';
-            this.crop_btn.style.backgroundColor = '#FF9800'; // Orange
-            
-            try {
-                // Send the cropped image for prediction
-                const predictionResult = await this.file_system.predictCropImage(croppedImageBase64);
-                
-                if (predictionResult.success) {
-                    // If prediction was successful, replace the mask region with the predicted mask
-                    console.log("Prediction successful, updating mask");
-                    this.canvas.replaceMaskRegion(x1, y1, x2, y2, predictionResult.maskBase64);
-                    
-                    // Show success on button
-                    this.crop_btn.textContent = '✅ Predicted!';
-                    this.crop_btn.style.backgroundColor = '#4CAF50'; // Green
-                } else {
-                    // If prediction failed, just use the original cropped image
-                    console.warn("Prediction failed:", predictionResult.error);
-                    this.canvas.replaceMaskRegion(x1, y1, x2, y2, croppedImageBase64);
-                    
-                    // Show failure on button
-                    this.crop_btn.textContent = '❌ Prediction Failed';
-                    this.crop_btn.style.backgroundColor = '#F44336'; // Red
-                    
-                    // Display error in console
-                    console.error("Prediction failed:", predictionResult.error);
-                }
-            } catch (error) {
-                // If there was an error during prediction, fallback to using the original image
-                console.error("Error during prediction:", error);
-                this.canvas.replaceMaskRegion(x1, y1, x2, y2, croppedImageBase64);
-                
-                // Show error on button
-                this.crop_btn.textContent = '❌ Error';
-                this.crop_btn.style.backgroundColor = '#F44336'; // Red
-            }
-            
-            // Reset button appearance after a delay
-            setTimeout(() => {
-                this.crop_btn.textContent = originalText;
-                this.crop_btn.style.backgroundColor = '';
-            }, 2000);
-        });
-    }
+    
+
 }
